@@ -129,13 +129,13 @@ am2302_data_t am2302_read_data(gpio_num_t pin) {
         rv.error = ESP_ERR_INVALID_RESPONSE;
         return rv;
     }
-    if((((rv.humidity >> 8) + (rv.humidity & 0xFF) + (rv.temperature >> 8) + (rv.temperature & 0xFF)) & 0xFF) != rv.parity) {
+    if((((rv.humidity >> 8) + rv.humidity + (rv.temperature >> 8) + rv.temperature) & 0xFF) != rv.parity) {
         ESP_LOGW(TAG, "parity check failed");
         rv.error = ESP_ERR_INVALID_RESPONSE;
         return rv;
     }
     if(rv.temperature & 0x8000)
-        rv.temperature = ~rv.temperature | 0x8000;
+        rv.temperature = (~rv.temperature + 1) | 0x8000;
     rv.error = ESP_OK;
     return rv;
 }
