@@ -46,3 +46,6 @@ void app_main() {
     }
 }
 ```
+
+## License
+This project is licensed under the GNU General Public License v3.0, see [LICENSE](LICENSE).
