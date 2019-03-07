@@ -40,12 +40,12 @@ static inline bool await_level_change(gpio_num_t pin, int usec_min, int usec_max
 
 static bool read_bits(gpio_num_t pin, int n, short int *data) {
     for(int i = 0; i < n; i++) {
-        if (!await_level_change(pin, 0, 60, GPIO_LOW))
+        if(!await_level_change(pin, 0, 60, GPIO_LOW))
             return false;
         int usecs = await_level_change_usec(pin, 80, GPIO_HIGH);
-        if (usecs < 0)
+        if(usecs < 0)
             return false;
-        if (usecs >= 50)
+        if(usecs >= 50)
             *data |= (1U << (n - i - 1));
     }
     return true;

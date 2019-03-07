@@ -22,7 +22,6 @@
 #include "esp_err.h"
 #include "driver/gpio.h"
 
-
 typedef struct {
     short int humidity;
     short int temperature;
