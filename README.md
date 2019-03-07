@@ -23,26 +23,35 @@ git clone https://github.com/smartjeff/esp32-am2302.git components/am2302
 **app_main.c**
 ```C
 #include <stdio.h>
-#include "freertos/FreeRTOS.h" // required for including task.h
-#include "freertos/task.h"     // for vTaskDelay()
+#include "freertos/FreeRTOS.h"     // required for including task.h
+#include "freertos/task.h"         // for vTaskDelay()
 #include "am2302.h"
 
 #define AM2302_DATA_PIN GPIO_NUM_23 // if your sensors data pin is connected to GPIO 23
 
 void app_main() {
-    if(am2302_init_bus(AM2302_DATA_PIN) != ESP_OK) // initialize the one wire bus (set pin direction to output and level to high)
+    // initialize the one wire bus (set pin direction to output and level to high)
+    if(am2302_init_bus(AM2302_DATA_PIN) != ESP_OK)
         printf("failed to initialize the bus!\n");
+
     while(1) {
-        am2302_data_t data = am2302_read_data(AM2302_DATA_PIN); // read the sensor data
+        // read the sensor data
+        am2302_data_t data = am2302_read_data(AM2302_DATA_PIN);
+
+        // check if the data has been receieved successfully
         if(data.error != ESP_OK)
             printf("reading data from am2302 returned an error code!\n");
+
+        // print the data
         printf(
             "%02.01f %% RH | %02.01f °C | parity: 0x%02hhx\n",
             (float) data.humidity / 10,
             (float) data.temperature / 10,
             data.parity
         );
-        vTaskDelay(1000 / portTICK_PERIOD_MS); // read the data once per second
+
+        // wait one second between the readings
+        vTaskDelay(1000 / portTICK_PERIOD_MS);
     }
 }
 ```
