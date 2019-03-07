@@ -25,12 +25,13 @@
 static const char *TAG = "am2302";
 
 static int await_level_change_usec(gpio_num_t pin, int usec_max, int level) {
-    for(int i = 0; i < usec_max; i++) {
+    for(int i = 0; true; i++) {
         if(gpio_get_level(pin) != level)
             return i;
+        if(i >= usec_max)
+            return -1;
         ets_delay_us(1);
     }
-    return -1;
 }
 
 static inline bool await_level_change(gpio_num_t pin, int usec_min, int usec_max, int level) {
