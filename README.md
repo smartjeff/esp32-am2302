@@ -30,10 +30,10 @@ git clone https://github.com/smartjeff/esp32-am2302.git components/am2302
 #define AM2302_DATA_PIN GPIO_NUM_23 // if your sensors data pin is connected to GPIO 23
 
 void app_main() {
-    if(am2302_init_bus(AM2302_DATA_PIN) != ESP_OK)
+    if(am2302_init_bus(AM2302_DATA_PIN) != ESP_OK) // initialize the one wire bus (set pin direction to output and level to high)
         printf("failed to initialize the bus!\n");
     while(1) {
-        am2302_data_t data = am2302_read_data(AM2302_DATA_PIN);
+        am2302_data_t data = am2302_read_data(AM2302_DATA_PIN); // read the sensor data
         if(data.error != ESP_OK)
             printf("reading data from am2302 returned an error code!\n");
         printf(
