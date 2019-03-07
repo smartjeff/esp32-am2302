@@ -50,24 +50,6 @@ static bool read_bits(gpio_num_t pin, int n, short int *data) {
     return true;
 }
 
-static esp_err_t start_transmission(gpio_num_t pin) {
-    esp_err_t rv;
-    if((rv = gpio_set_direction(pin, GPIO_MODE_OUTPUT)) != ESP_OK) {
-        ESP_LOGE(TAG, "failed to enable output mode on pin");
-        return rv;
-    }
-    if((rv = gpio_set_level(pin, GPIO_LOW)) != ESP_OK) {
-        ESP_LOGE(TAG, "failed to pull level down");
-        return rv;
-    }
-    ets_delay_us(3000);
-    if((rv = gpio_set_level(pin, GPIO_HIGH)) != ESP_OK) {
-        ESP_LOGE(TAG, "failed to pull level up");
-        return rv;
-    }
-    return ESP_OK;
-}
-
 esp_err_t am2302_init_bus(gpio_num_t pin) {
     esp_err_t rv;
     if((rv = gpio_set_direction(pin, GPIO_MODE_OUTPUT)) != ESP_OK) {
@@ -79,11 +61,6 @@ esp_err_t am2302_init_bus(gpio_num_t pin) {
         return rv;
     }
     ets_delay_us(1000);
-    if((rv = start_transmission(pin)) != ESP_OK) {
-        ESP_LOGE(TAG, "failed to start transmission");
-        return rv;
-    }
-    ets_delay_us(1000000);
     return ESP_OK;
 }
 
@@ -93,7 +70,19 @@ am2302_data_t am2302_read_data(gpio_num_t pin) {
             .humidity = 0,
             .parity = 0
     };
-    start_transmission(pin);
+    if((rv.error = gpio_set_direction(pin, GPIO_MODE_OUTPUT)) != ESP_OK) {
+        ESP_LOGE(TAG, "failed to enable output mode on pin");
+        return rv;
+    }
+    if((rv.error = gpio_set_level(pin, GPIO_LOW)) != ESP_OK) {
+        ESP_LOGE(TAG, "failed to pull level down");
+        return rv;
+    }
+    ets_delay_us(3000);
+    if((rv.error = gpio_set_level(pin, GPIO_HIGH)) != ESP_OK) {
+        ESP_LOGE(TAG, "failed to pull level up");
+        return rv;
+    }
     if((rv.error = gpio_set_direction(pin, GPIO_MODE_INPUT)) != ESP_OK) {
         ESP_LOGE(TAG, "failed to enable input mode on pin");
         return rv;
