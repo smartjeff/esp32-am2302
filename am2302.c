@@ -88,40 +88,34 @@ am2302_data_t am2302_read_data(gpio_num_t pin) {
         ESP_LOGE(TAG, "failed to enable input mode on pin");
         return rv;
     }
+    rv.error = ESP_ERR_INVALID_RESPONSE;
     if(!await_level_change(pin, 0, 500, GPIO_HIGH)) {
         ESP_LOGE(TAG, "timed out waiting for level change");
-        rv.error = ESP_ERR_INVALID_RESPONSE;
         return rv;
     }
     if(!await_level_change(pin, 50, 120, GPIO_LOW)) {
         ESP_LOGE(TAG, "timed out waiting for level change or level change too quick");
         ESP_LOGI(TAG, "is the power source of the am2302 active?");
-        rv.error = ESP_ERR_INVALID_RESPONSE;
         return rv;
     }
     if(!await_level_change(pin, 50, 120, GPIO_HIGH)) {
         ESP_LOGE(TAG, "timed out waiting for level change or level change too quick");
-        rv.error = ESP_ERR_INVALID_RESPONSE;
         return rv;
     }
     if(!read_bits(pin, 16, &rv.humidity)) {
         ESP_LOGE(TAG, "error reading humidity bits");
-        rv.error = ESP_ERR_INVALID_RESPONSE;
         return rv;
     }
     if(!read_bits(pin, 16, &rv.temperature)) {
         ESP_LOGE(TAG, "error reading temperature bits");
-        rv.error = ESP_ERR_INVALID_RESPONSE;
         return rv;
     }
     if(!read_bits(pin, 8, (short int*) &rv.parity)) {
         ESP_LOGE(TAG, "error reading parity bits");
-        rv.error = ESP_ERR_INVALID_RESPONSE;
         return rv;
     }
     if((((rv.humidity >> 8) + rv.humidity + (rv.temperature >> 8) + rv.temperature) & 0xFF) != rv.parity) {
         ESP_LOGW(TAG, "parity check failed");
-        rv.error = ESP_ERR_INVALID_RESPONSE;
         return rv;
     }
     if(rv.temperature & 0x8000)
