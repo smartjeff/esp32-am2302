@@ -29,7 +29,6 @@ typedef struct {
     esp_err_t error;
 } am2302_data_t;
 
-esp_err_t am2302_init_bus(gpio_num_t pin);
 am2302_data_t am2302_read_data(gpio_num_t pin);
 
 #endif //AM2302_H
