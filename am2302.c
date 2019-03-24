@@ -88,7 +88,6 @@ static bool read_bits(gpio_num_t pin, int n, short int *data) {
          */
         if(usecs >= 50)
             *data |= (1U << (n - i - 1));
-
     }
     return true;
 }
