@@ -68,13 +68,27 @@ static inline bool await_level_change(gpio_num_t pin, int usec_min, int usec_max
  */
 static bool read_bits(gpio_num_t pin, int n, short int *data) {
     for(int i = 0; i < n; i++) {
+        // wait for the sensor to pull the level up
         if(!await_level_change(pin, 0, 60, GPIO_LOW))
             return false;
+
+        // measure the time the level is up
         int usecs = await_level_change_usec(pin, 80, GPIO_HIGH);
+
+        /*
+         * if the function returned a value less than 0
+         * the sensor pulled the level up for more than 80 microseconds
+         */
         if(usecs < 0)
             return false;
+
+        /*
+         * if the level was pulled up longer than 50 microseconds: store 1
+         * everything less is interpreted as 0 and not stored
+         */
         if(usecs >= 50)
             *data |= (1U << (n - i - 1));
+
     }
     return true;
 }
@@ -93,9 +107,9 @@ static bool read_bits(gpio_num_t pin, int n, short int *data) {
  */
 am2302_data_t am2302_read_data(gpio_num_t pin) {
     am2302_data_t rv = {
-            .temperature = 0,
-            .humidity = 0,
-            .parity = 0
+        .humidity = 0,
+        .temperature = 0,
+        .parity = 0
     };
 
     // set pin direction to output to send the start signal
@@ -119,7 +133,7 @@ am2302_data_t am2302_read_data(gpio_num_t pin) {
 
     rv.error = ESP_ERR_INVALID_RESPONSE;
 
-    // after the start signal is sent the sensor will pull the level up, then down and then up again
+    // after the start signal is sent the sensor will pull the level down, then up and then down again
     // wait for the sensor to pull the level down
     if(!await_level_change(pin, 0, 100, GPIO_HIGH)) {
         ESP_LOGE(TAG, "level on pin is 0 after enabling input mode (transmission start signal)");
