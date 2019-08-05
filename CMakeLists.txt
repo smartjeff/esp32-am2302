@@ -1,4 +1,5 @@
-set(COMPONENT_SRCS "am2302.c")
-set(COMPONENT_ADD_INCLUDEDIRS "./include")
-set(COMPONENT_REQUIRES log driver)
-register_component()
+set(REQUIRES log driver)
+idf_component_register(
+    SRCS "am2302.c"
+    INCLUDE_DIRS "include"
+)

@@ -19,9 +19,6 @@
 #include "am2302.h"
 #include "esp_log.h"
 
-#define GPIO_LOW 0
-#define GPIO_HIGH 1
-
 static const char *TAG = "am2302";
 
 
@@ -53,7 +50,7 @@ static int await_level_change_usec(gpio_num_t pin, int usec_max, int level) {
  * returns: true if the level changed after usec_min and before usec_max
  * returns: false otherwise
  */
-static inline bool await_level_change(gpio_num_t pin, int usec_min, int usec_max, int level) {
+static bool await_level_change(gpio_num_t pin, int usec_min, int usec_max, int level) {
     return await_level_change_usec(pin, usec_max, level) >= usec_min;
 }
 
@@ -69,11 +66,11 @@ static inline bool await_level_change(gpio_num_t pin, int usec_min, int usec_max
 static bool read_bits(gpio_num_t pin, int n, short int *data) {
     for(int i = 0; i < n; i++) {
         // wait for the sensor to pull the level up
-        if(!await_level_change(pin, 0, 60, GPIO_LOW))
+        if(!await_level_change(pin, 0, 60, 0))
             return false;
 
         // measure the time the level is up
-        int usecs = await_level_change_usec(pin, 80, GPIO_HIGH);
+        int usecs = await_level_change_usec(pin, 80, 1);
 
         /*
          * if the function returned a value less than 0
@@ -118,7 +115,7 @@ am2302_data_t am2302_read_data(gpio_num_t pin) {
     }
 
     // start signal: pull level down for 3ms to signal the sensor to start the transmission
-    if((rv.error = gpio_set_level(pin, GPIO_LOW)) != ESP_OK) {
+    if((rv.error = gpio_set_level(pin, 0)) != ESP_OK) {
         ESP_LOGE(TAG, "failed to pull level down (transmission initiation)");
         return rv;
     }
@@ -134,21 +131,21 @@ am2302_data_t am2302_read_data(gpio_num_t pin) {
 
     // after the start signal is sent the sensor will pull the level down, then up and then down again
     // wait for the sensor to pull the level down
-    if(!await_level_change(pin, 0, 100, GPIO_HIGH)) {
+    if(!await_level_change(pin, 0, 100, 1)) {
         ESP_LOGE(TAG, "level on pin is 0 after enabling input mode (transmission start signal)");
         ESP_LOGI(TAG, "the sensor has an internal pull up resistor for the data pin, so the sensor probably isn't connected");
         return rv;
     }
 
     // wait for the sensor to pull the level up
-    if(!await_level_change(pin, 50, 120, GPIO_LOW)) {
+    if(!await_level_change(pin, 50, 120, 0)) {
         ESP_LOGE(TAG, "timed out waiting for level change or level change too quick (transmission start signal)");
         ESP_LOGI(TAG, "is the power source of the am2302 active?");
         return rv;
     }
 
     // wait for the sensor to pull the level down
-    if(!await_level_change(pin, 50, 120, GPIO_HIGH)) {
+    if(!await_level_change(pin, 50, 120, 1)) {
         ESP_LOGE(TAG, "timed out waiting for level change or level change too quick (transmission start signal)");
         return rv;
     }
@@ -165,6 +162,24 @@ am2302_data_t am2302_read_data(gpio_num_t pin) {
         return rv;
     }
 
+    // read the parity bits
+    if(!read_bits(pin, 8, (short int*) &rv.parity)) {
+        ESP_LOGE(TAG, "error reading parity bits");
+        return rv;
+    }
+
+    rv.error = ESP_OK;
+
+    /*
+     * parity check:
+     * sum all of the 4 received temperature and humidity bytes
+     * and check if it equals the parity byte
+     */
+    if((((rv.humidity >> 8) + rv.humidity + (rv.temperature >> 8) + rv.temperature) & 0xFF) != rv.parity) {
+        rv.error = ESP_ERR_INVALID_RESPONSE;
+        ESP_LOGW(TAG, "parity check failed");
+    }
+
     /*
      * if the most significant temperature bit is 1, the temperature is negative.
      * since the am2302 uses a different system for representing negative numbers
@@ -174,22 +189,5 @@ am2302_data_t am2302_read_data(gpio_num_t pin) {
     if(rv.temperature & 0x8000)
         rv.temperature = (~rv.temperature + 1) | 0x8000;
 
-    // read the parity bits
-    if(!read_bits(pin, 8, (short int*) &rv.parity)) {
-        ESP_LOGE(TAG, "error reading parity bits");
-        return rv;
-    }
-
-    /*
-     * parity check:
-     * sum all of the 4 received temperature and humidity bytes
-     * and check if it equals the parity byte
-     */
-    if((((rv.humidity >> 8) + rv.humidity + (rv.temperature >> 8) + rv.temperature) & 0xFF) != rv.parity) {
-        ESP_LOGW(TAG, "parity check failed");
-        return rv;
-    }
-
-    rv.error = ESP_OK;
     return rv;
 }

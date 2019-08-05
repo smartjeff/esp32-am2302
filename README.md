@@ -19,6 +19,11 @@ git submodule add https://github.com/smartjeff/esp32-am2302.git components/am230
 git clone https://github.com/smartjeff/esp32-am2302.git components/am2302
 ```
 
+And if you're setting the `COMPONENTS` variable in your `CMakeLists.txt`, add it there:
+```CMake
+set(COMPONENTS main esptool_py am2302)
+```
+
 ## Usage Example
 **app_main.c**
 ```C
